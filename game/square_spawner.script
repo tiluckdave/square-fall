@@ -1,0 +1,86 @@
+local data = require('main.data')
+
+function init(self)
+	self.speed = 46
+	self.frequency = 22
+	self.active = {}
+	self.square_counter = 0
+end
+
+local function spawn(self)
+	local start_x = math.random(0, data.project_width)
+	local start_position = vmath.vector3(start_x, data.max_y + 24, 1)
+	local end_x = math.random(data.line_edge_left + 48, data.line_edge_right - 48)
+	local end_position = vmath.vector3(end_x, data.mid_y - (data.screen_height / 3), 1)
+	self.square_counter = self.square_counter + 1
+
+	local square = factory.create('#factory', start_position, nil, {
+		speed = self.speed,
+		end_position = end_position,
+		is_point = (self.square_counter %  5 == 0) and true or false
+	}, 1)
+
+	table.insert (self.active, square)
+	local frequency = self. frequency * 0.1
+	local delay = data.duration(self.speed, start_position, end_position) / frequency
+	self.spawn_timer = timer.delay(delay, false, function()
+		spawn(self)
+	end)
+end
+
+local function increase_speed(self)
+	if self.speed < 58 then
+		self.speed = self.speed + 0.54
+	elseif self.speed < 66 then
+		self.speed = self.speed + 0.2
+	end
+	if self.frequency < 34 then
+		self.frequency = self.frequency + 0.54
+	elseif self.frequency < 44 then
+		self.frequency = self.frequency + 0.25
+	end
+end
+
+
+function on_message(self, message_id, message, sender)
+	if message_id == hash('start') then
+		spawn(self)
+	elseif message_id == hash('increase_speed') then
+		increase_speed(self)
+	elseif message_id == hash('remove') then
+		for k, v in pairs(self.active) do
+			if v == message.id then
+				table.remove(self.active, k)
+				break
+			end
+		end
+
+		go.animate(message.id, 'scale', go.PLAYBACK_ONCE_FORWARD, 0, go.EASING_LINEAR, 0.3, 0, function()
+			go.delete(message.id, true)
+		end)
+		
+	elseif message_id == hash('stop') then 
+		for i = #self.active, 1, -1 do
+			local square = self.active[i]
+			table.remove(self.active, i)
+			go.cancel_animations(square, 'euler.z')
+			go.cancel_animations(square, 'position')
+
+			go.animate(square, 'scale', go.PLAYBACK_ONCE_FORWARD, 0, go.EASING_LINEAR, 0.3, 0.5, function()
+				go.delete(square, true)
+			end)
+		end
+	end
+end
+
+
+
+
+
+
+
+
+
+
+
+

@@ -1,0 +1,27 @@
+local data = require('main.data')
+
+function init(self)
+	self.score = 0
+	if data.LIGHT_MODE then 
+		go.set('#label', 'color', vmath.vector4(0, 0, 0, 0.2))
+	else
+		go.set('#label', 'color', vmath.vector4(255/255, 255/255, 255/255, 0.2))
+	end
+end
+
+function final (self)
+	if data.state == data.STATE_GAMEOVER then
+		msg.post('gameover:/go#gameover','final_score', {score = self.score})
+	end
+end
+
+function on_message(self, message_id, message, sender)
+	if message_id == hash('increase_score') then
+		self.score = self.score + 1
+		label.set_text('#label', self.score)
+		msg.post('main:/sound#point', 'play_sound')
+		if go.get_scale().x == 1 then
+			go.animate('.', 'scale', go.PLAYBACK_ONCE_PINGPONG, go.get_scale() * 1.15, go.EASING_LINEAR, 0.28)
+		end
+	end
+end
